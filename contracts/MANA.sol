@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "hardhat/console.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -109,9 +108,6 @@ contract MANA is Context, IERC20, IERC20Metadata {
      * @dev See {IERC20-balanceOf}.
      */
     function balanceOf(address account) public view virtual override returns (uint256) {
-        // console.log(account);
-        // console.log(account);
-        console.log("account is %s, balances is %d", account, _balances[account]);
         return _balances[account];
     }
 
@@ -125,7 +121,6 @@ contract MANA is Context, IERC20, IERC20Metadata {
      */
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
         address owner = _msgSender();
-        balanceOf(owner);
         _transfer(owner, to, amount);
         return true;
     }

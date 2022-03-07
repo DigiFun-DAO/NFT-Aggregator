@@ -10,7 +10,6 @@ contract Aggregator{
 
     address private creator;
     address private officialWallet;
-    address private nftWallet;
 
     uint256 transferFee;
 
@@ -28,10 +27,9 @@ contract Aggregator{
 
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    constructor(address incomeAddress, address nftAddress, address manaAddress, uint256 fee) {
+    constructor(address incomeAddress, address manaAddress, uint256 fee) {
         creator = msg.sender;
         officialWallet = incomeAddress;
-        nftWallet = nftAddress;
         MANA = IERC20(manaAddress);
         transferFee = fee;
     }
@@ -107,7 +105,7 @@ contract Aggregator{
             revert("NFT not found");
         }
 
-        _transferERC20(to, officialWallet, sum);
+        _transferERC20(address(this), officialWallet, sum);
         
         for(uint i = 0; i < NFTGroup[groupKey].length; i++) {
             _transferNFT(to, NFTGroup[groupKey][i]);
@@ -116,31 +114,26 @@ contract Aggregator{
 
     function _transferERC20(address _to, address _feeTo, uint256 price) internal {
         uint256 fee = (price * transferFee / 100);
-        // console.log(msg.sender);
-        // console.log("fee: %d, balance: %d, price: %d", fee, MANA.balanceOf(msg.sender), price);
-        // MANA.approve(address(this), price);
-        MANA.balanceOf(msg.sender);
-        _safeTransfer(_to, price - fee);
-        _safeTransfer( _feeTo, fee);
-    }
-
-    function _safeTransfer(address to, uint value) private {
-        (bool success, bytes memory data) = address(MANA).delegatecall(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success, 'TRANSFER_FAILED1');
-        require((data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED2');
+        MANA.transferFrom(msg.sender, _to, price - fee);
+        MANA.transferFrom(msg.sender, _feeTo, fee);
     }
 
     function _transferNFT(address to, NFT memory nft) internal {
         IERC721Enumerable nftContract = IERC721Enumerable(nft.addr);
-        uint256 total = nftContract.balanceOf(nftWallet);
+        uint256 total = nftContract.balanceOf(address(this));
         for(uint i = 0; i < total; i++) {
-            uint256 tokenId = nftContract.tokenOfOwnerByIndex(nftWallet, i);
+            uint256 tokenId = nftContract.tokenOfOwnerByIndex(address(this), i);
             if (tokenId <= nft.upperBound && tokenId >= nft.lowerBound) {
                 nft.balance -= 1;
-                nftContract.transferFrom(nftWallet, to, tokenId);
+                nftContract.transferFrom(address(this), to, tokenId);
                 return;
             }
         }
         revert("NFT not found");
     }
+
+    // function _safeTransfer(address to, uint value) private {
+    //     (bool success, bytes memory data) = MANA.call(abi.encodeWithSelector(SELECTOR, to, value));
+    //     require(success && (data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED');
+    // }
 }
