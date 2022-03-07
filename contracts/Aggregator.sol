@@ -3,13 +3,14 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 contract Aggregator{
-    IERC20 MANA = IERC20(0x0F5D2fB29fb7d3CFeE444a200298f468908cC942);
+    IERC20 private MANA;
 
-    address creator;
-    address officialWallet;
-    address nftWallet;
+    address private creator;
+    address private officialWallet;
+    address private nftWallet;
 
     uint256 transferFee;
 
@@ -23,12 +24,15 @@ contract Aggregator{
         uint balance;
         address addr;
     }
-    mapping(string => NFT[]) NFTGroup;
+    mapping(string => NFT[]) private NFTGroup;
 
-    constructor(address incomeAddress, address nftAddress, uint256 fee) {
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
+
+    constructor(address incomeAddress, address nftAddress, address manaAddress, uint256 fee) {
         creator = msg.sender;
         officialWallet = incomeAddress;
         nftWallet = nftAddress;
+        MANA = IERC20(manaAddress);
         transferFee = fee;
     }
 
@@ -103,7 +107,7 @@ contract Aggregator{
             revert("NFT not found");
         }
 
-        _transferERC20(address(this), officialWallet, sum);
+        _transferERC20(to, officialWallet, sum);
         
         for(uint i = 0; i < NFTGroup[groupKey].length; i++) {
             _transferNFT(to, NFTGroup[groupKey][i]);
@@ -111,9 +115,19 @@ contract Aggregator{
     }
 
     function _transferERC20(address _to, address _feeTo, uint256 price) internal {
-        uint256 fee = (price / 100) * transferFee;
-        MANA.transferFrom(msg.sender, _to, price - fee);
-        MANA.transferFrom(msg.sender, _feeTo, fee);
+        uint256 fee = (price * transferFee / 100);
+        // console.log(msg.sender);
+        // console.log("fee: %d, balance: %d, price: %d", fee, MANA.balanceOf(msg.sender), price);
+        // MANA.approve(address(this), price);
+        MANA.balanceOf(msg.sender);
+        _safeTransfer(_to, price - fee);
+        _safeTransfer( _feeTo, fee);
+    }
+
+    function _safeTransfer(address to, uint value) private {
+        (bool success, bytes memory data) = address(MANA).delegatecall(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success, 'TRANSFER_FAILED1');
+        require((data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED2');
     }
 
     function _transferNFT(address to, NFT memory nft) internal {
