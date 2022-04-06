@@ -3,189 +3,253 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+var w3 = require('web3')
+var BigNumber = require('bignumber.js')
 const hre = require("hardhat");
 const { expect } = require("chai");
+const { ethers } = require('hardhat');
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
-
-  // We get the contract to deploy
+  await debug()
+}
 
 
-  // product environment
-  // const Aggregator = await hre.ethers.getContractFactory("Aggregator")
-  // const aggregator = await Aggregator.deploy("0x17A6ba0B9Cc209ec061BA117769Ec7e9a30A0952", "0x0F5D2fB29fb7d3CFeE444a200298f468908cC942", 5)
-  // await aggregator.deployed()
-  // console.log("Aggregator deployed to:", aggregator.address)
-
-  // test environment
+async function debug() {
   const [owner, user, office] = await ethers.getSigners()
-  console.log("=========== create acounts ===========")
-  console.log("user: %s, official account: %s", user.address, office.address)
 
-  console.log("=========== deploy contracts ===========")
-  const NFT = await hre.ethers.getContractFactory("NFT")
-  const nft = await NFT.deploy('Evil Snowman', 'ES')
-  await nft.deployed()
-  console.log("NFT deployed to:", nft.address)
+  const Aggregator = await hre.ethers.getContractFactory("Aggregator")
+  const aggregator = await Aggregator.deploy(office.address, 1000)
+  await aggregator.deployed()
+  console.log("aggregator deployed to:", aggregator.address)
 
-  const MANA = await hre.ethers.getContractFactory("MANA")
+  const ERC721Test = await hre.ethers.getContractFactory("ERC721Test")
+  const erc721 = await ERC721Test.deploy("Ice Shadow", "IS")
+  await erc721.deployed()
+  console.log("erc721 deployed to:", erc721.address)
+
+  const ERC1155Test = await hre.ethers.getContractFactory("ERC1155Test")
+  const erc1155 = await ERC1155Test.deploy("test_uri")
+  await erc1155.deployed()
+  console.log("erc1155 deployed to:", erc1155.address)
+
+  const MANA = await hre.ethers.getContractFactory("ERC20Test")
   const mana = await MANA.deploy('MANA', 'MN')
   await mana.deployed()
   console.log("MANA deployed to:", mana.address)
 
-  const Aggregator = await hre.ethers.getContractFactory("Aggregator")
-  const aggregator = await Aggregator.deploy(office.address, mana.address, 1000)
-  await aggregator.deployed()
-  console.log("Aggregator deployed to:", aggregator.address)
+  const bana = await MANA.deploy('BANA', 'BN')
+  await bana.deployed()
+  console.log("BANA deployed to:", bana.address)
 
-  console.log("=========== mint 100,0000 mana to user ===========")
-  await mana.mint(user.address, 1000000)
-  // check mint amount
-  // expect(await mana.balanceOf(user.address)).to.equal(1000000)
+  nftNum = 10
+
+  await aggregator.createNFT(0, "desc0", 90, 1, 1000, nftNum, 0, erc721.address, mana.address)
+  await aggregator.createNFT(1, "desc1", 90, 10001, 11000, nftNum, 0, erc721.address, mana.address)
+  await aggregator.createNFT(10, "desc0", 20, 20000, 20000, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(11, "desc1", 20, 20001, 20001, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(12, "desc2", 20, 20002, 20002, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(13, "desc3", 20, 20003, 20003, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(14, "desc4", 20, 20004, 20004, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(15, "desc5", 20, 20005, 20005, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(16, "desc6", 20, 20006, 20006, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(17, "desc7", 20, 20007, 20007, nftNum, 1, erc1155.address, bana.address)
+  await aggregator.createNFT(18, "desc8", 20, 20008, 20008, nftNum, 1, erc1155.address, bana.address)
+
+  for (i = 1; i <= nftNum; i++) {
+    await erc721.mint(aggregator.address, i)
+    await erc721.mint(aggregator.address, i + 10000)
+  }
+  console.log("mint 10 erc721 nft group to address:", aggregator.address)
+
+  for (i = 0; i < 9; i++) {
+    await erc1155.mint(aggregator.address, 20000 + i, nftNum, w3.utils.asciiToHex("test"))
+  }
+  console.log("mint 10 erc1155 nft group to address:", aggregator.address)
+
+  await mana.mint(user.address, 10000)
   console.log("mint %d mana to user", await mana.balanceOf(user.address))
+  await bana.mint(user.address, 10000)
+  console.log("mint %d bana to user", await bana.balanceOf(user.address))
 
-  console.log("=========== mint 20 NFT(10 suits) to contract ===========")
-  // mint 1-10 and 10000000-10000010 to user
-  for (let i = 1; i <= 9; i++) {
-    await nft.mint(aggregator.address, i)
-    await nft.mint(aggregator.address, i + 10000000000)
-  }
-  console.log("mint 18 nfts to address:", aggregator.address)
+  // Query balance
+  erc721Balance = await erc721.balanceOf(aggregator.address)
+  erc721UserBalance = await erc721.balanceOf(user.address)
+  console.log("erc721 balance of aggregator: ", erc721Balance)
+  console.log("erc721 balance of user: ", erc721UserBalance)
 
-  // check mint amount
-  nftNum = await nft.balanceOf(aggregator.address)
-  console.log("contract owns %d nft:", nftNum)
-  // expect(nftNum).to.equal(20)
-
-  console.log("=========== search all token id ===========")
-  for (let i = 0; i < nftNum; i++) {
-    tokenId = await nft.tokenOfOwnerByIndex(aggregator.address, i)
-    console.log("Index: %d, tokenId: %d", i, tokenId)
+  for (i = 0; i < 9; i++) {
+    erc1155Balance = await erc1155.balanceOf(aggregator.address, 20000 + i)
+    erc1155UserBalance = await erc1155.balanceOf(user.address, 20000 + i)
+    console.log("erc1155 %d balance of aggregator: %d", i, erc1155Balance)
+    console.log("erc1155 %d balance of user: %d", i, erc1155UserBalance)
   }
 
-  console.log("=========== create NFT ===========")
-  await aggregator.createNFT("evil snowman1", "desc1", 100000, 1, 10, 9, nft.address)
-  await aggregator.createNFT("evil snowman2", "desc2", 100000, 10000000000, 10000000010, 9, nft.address)
+  contractManaBalance = await mana.balanceOf(aggregator.address)
+  userManaBalance = await mana.balanceOf(user.address)
+  officeManaBalance = await mana.balanceOf(office.address)
+  console.log("contract owns %d mana.", contractManaBalance)
+  console.log("user owns %d mana.", userManaBalance)
+  console.log("office owns %d mana.", officeManaBalance)
 
-  nft1Info = await aggregator.getNFT("evil snowman1")
-  console.log("evil snowman1 info", nft1Info)
-  nft2Info = await aggregator.getNFT("evil snowman2")
-  console.log("evil snowman2 info", nft2Info)
+  contractBanaBalance = await bana.balanceOf(aggregator.address)
+  userBanaBalance = await bana.balanceOf(user.address)
+  officeBanaBalance = await bana.balanceOf(office.address)
+  console.log("contract owns %d bana.", contractBanaBalance)
+  console.log("user owns %d bana.", userBanaBalance)
+  console.log("office owns %d bana.", officeBanaBalance)
+  // =======
 
-  console.log("=========== put NFTs into NFTGroup ===========")
-  await aggregator.putNFTsIntoGroup(["evil snowman1", "evil snowman2"], "group1")
-  console.log("put nft into nftgroup %s", "group1")
+  console.log("user buy nft")
+  await mana.connect(user).approve(aggregator.address, 10000)
+  await bana.connect(user).approve(aggregator.address, 10000)
 
-  group1Info = await aggregator.getNFTGroup("group1")
-  console.log("group1 contains: ", group1Info)
+  await aggregator.connect(user).buyNFTs(user.address, [0, 1], [4, 6])
 
-  // error test
-  // console.log("=========== test illegal user create NFT ===========")
-  // await aggregator.connect(user).createNFT("evil snowman3", "desc1", 100000, 1, 10, 10, nft.address)
 
-  // console.log("=========== test create existed NFT ===========")
-  // await aggregator.createNFT("evil snowman1", "desc1", 100000, 1, 10, 10, nft.address)
+  // Query balance
+  erc721Balance = await erc721.balanceOf(aggregator.address)
+  erc721UserBalance = await erc721.balanceOf(user.address)
+  console.log("erc721 balance of aggregator: ", erc721Balance)
+  console.log("erc721 balance of user: ", erc721UserBalance)
 
-  console.log("=========== increase NFT ===========")
-  await nft.mint(aggregator.address, 10)
-  await nft.mint(aggregator.address, 10000000010)
-  console.log("mint 2 nfts to address:", aggregator.address)
-
-  // check mint amount
-  nftNum = await nft.balanceOf(aggregator.address)
-  console.log("contract owns %d nft:", nftNum)
-
-  console.log("=========== search all token id ===========")
-  for (let i = 0; i < nftNum; i++) {
-    const tokenId = await nft.tokenOfOwnerByIndex(aggregator.address, i)
-    console.log("Index: %d, tokenId: %d", i, tokenId)
+  for (i = 0; i < 9; i++) {
+    erc1155Balance = await erc1155.balanceOf(aggregator.address, 20000 + i)
+    erc1155UserBalance = await erc1155.balanceOf(user.address, 20000 + i)
+    console.log("erc1155 %d balance of aggregator: %d", i, erc1155Balance)
+    console.log("erc1155 %d balance of user: %d", i, erc1155UserBalance)
   }
-  await aggregator.increaseNFT("evil snowman1", 1)
-  await aggregator.increaseNFT("evil snowman2", 1)
-  nft1Info = await aggregator.getNFT("evil snowman1")
-  console.log("evil snowman1 info", nft1Info)
-  nft2Info = await aggregator.getNFT("evil snowman2")
-  console.log("evil snowman2 info", nft2Info)
 
-  console.log("=========== user buy group1 ===========")
-  console.log("user buy nft group: %s", "group1")
-  await mana.connect(user).approve(aggregator.address, 200000)
-  await aggregator.connect(user).buyNFTGroup(user.address, "group1")
-  contractNftNum = await nft.balanceOf(aggregator.address)
-  userNftNum = await nft.balanceOf(user.address)
-  console.log("contract owns %d nft.", contractNftNum)
-  console.log("user owns %d nft.", userNftNum)
+  contractManaBalance = await mana.balanceOf(aggregator.address)
+  userManaBalance = await mana.balanceOf(user.address)
+  officeManaBalance = await mana.balanceOf(office.address)
+  console.log("contract owns %d mana.", contractManaBalance)
+  console.log("user owns %d mana.", userManaBalance)
+  console.log("office owns %d mana.", officeManaBalance)
 
-  contractBalance = await mana.balanceOf(aggregator.address)
-  userBalance = await mana.balanceOf(user.address)
-  officeBalance = await mana.balanceOf(office.address)
+  contractBanaBalance = await bana.balanceOf(aggregator.address)
+  userBanaBalance = await bana.balanceOf(user.address)
+  officeBanaBalance = await bana.balanceOf(office.address)
+  console.log("contract owns %d bana.", contractBanaBalance)
+  console.log("user owns %d bana.", userBanaBalance)
+  console.log("office owns %d bana.", officeBanaBalance)
+  // =======
 
-  console.log("contract owns %d mana.", contractBalance)
-  console.log("user owns %d mana.", userBalance)
-  console.log("official wallet owns %d mana.", officeBalance)
+  await aggregator.connect(user).buyNFTs(user.address, [10, 11, 15, 18], [5, 5, 7, 3])
 
-  console.log("=========== user buy evil snowman1 ===========")
-  console.log("%s buy nft: %s", user.address, "group1")
-  await mana.connect(user).approve(aggregator.address, 100000)
-  await aggregator.connect(user).buyNFT(user.address, "evil snowman1")
-  contractNftNum = await nft.balanceOf(aggregator.address)
-  userNftNum = await nft.balanceOf(user.address)
-  console.log("contract owns %d nft.", contractNftNum)
-  console.log("user owns %d nft.", userNftNum)
+  // Query balance
+  erc721Balance = await erc721.balanceOf(aggregator.address)
+  erc721UserBalance = await erc721.balanceOf(user.address)
+  console.log("erc721 balance of aggregator: ", erc721Balance)
+  console.log("erc721 balance of user: ", erc721UserBalance)
 
-  contractBalance = await mana.balanceOf(aggregator.address)
-  userBalance = await mana.balanceOf(user.address)
-  officeBalance = await mana.balanceOf(office.address)
+  for (i = 0; i < 9; i++) {
+    erc1155Balance = await erc1155.balanceOf(aggregator.address, 20000 + i)
+    erc1155UserBalance = await erc1155.balanceOf(user.address, 20000 + i)
+    console.log("erc1155 %d balance of aggregator: %d", i, erc1155Balance)
+    console.log("erc1155 %d balance of user: %d", i, erc1155UserBalance)
+  }
 
-  console.log("contract owns %d mana.", contractBalance)
-  console.log("user owns %d mana.", userBalance)
-  console.log("office owns %d mana.", officeBalance)
+  contractManaBalance = await mana.balanceOf(aggregator.address)
+  userManaBalance = await mana.balanceOf(user.address)
+  officeManaBalance = await mana.balanceOf(office.address)
+  console.log("contract owns %d mana.", contractManaBalance)
+  console.log("user owns %d mana.", userManaBalance)
+  console.log("office owns %d mana.", officeManaBalance)
 
-  console.log("=========== user buy 1 NFT group ===========")
-  console.log("%s buy nft group: %s", user.address, "group1")
-  await mana.connect(user).approve(aggregator.address, 200000)
-  await aggregator.connect(user).buyNFTGroup(user.address, "group1")
-  contractNftNum = await nft.balanceOf(aggregator.address)
-  userNftNum = await nft.balanceOf(user.address)
-  console.log("contract owns %d nft.", contractNftNum)
-  console.log("user owns %d nft.", userNftNum)
+  contractBanaBalance = await bana.balanceOf(aggregator.address)
+  userBanaBalance = await bana.balanceOf(user.address)
+  officeBanaBalance = await bana.balanceOf(office.address)
+  console.log("contract owns %d bana.", contractBanaBalance)
+  console.log("user owns %d bana.", userBanaBalance)
+  console.log("office owns %d bana.", officeBanaBalance)
 
-  contractBalance = await mana.balanceOf(aggregator.address)
-  userBalance = await mana.balanceOf(user.address)
-  officeBalance = await mana.balanceOf(office.address)
 
-  console.log("contract owns %d mana.", contractBalance)
-  console.log("user owns %d mana.", userBalance)
-  console.log("office owns %d mana.", officeBalance)
+  // await aggregator.connect(user).buyNFTs(user.address, [0], [20])
+  // await aggregator.connect(user).buyNFTs(user.address, [10], [6])
+  await aggregator.transferERC20(user.address, 810, mana.address)
+  await aggregator.transferERC20(user.address, 360, bana.address)
+  await aggregator.transferNFTs(user.address, [0, 1])
+  await aggregator.transferNFTs(user.address, [10, 11, 12, 13, 14, 15, 16, 17, 18])
 
-  console.log("=========== transfer NFT to office ===========")
-  await aggregator.transferNFT(office.address, "evil snowman1", 7)
-  contractNftNum = await nft.balanceOf(aggregator.address)
-  userNftNum = await nft.balanceOf(user.address)
-  officeNftNum = await nft.balanceOf(office.address)
-  console.log("contract owns %d nft.", contractNftNum)
-  console.log("user owns %d nft.", userNftNum)
-  console.log("office owns %d nft.", officeNftNum)
+  // Query balance
+  erc721Balance = await erc721.balanceOf(aggregator.address)
+  erc721UserBalance = await erc721.balanceOf(user.address)
+  console.log("erc721 balance of aggregator: ", erc721Balance)
+  console.log("erc721 balance of user: ", erc721UserBalance)
 
-  console.log("=========== transfer 450000 MANA to office ===========")
-  await aggregator.transferERC20(office.address, 450000)
-  contractBalance = await mana.balanceOf(aggregator.address)
-  userBalance = await mana.balanceOf(user.address)
-  officeBalance = await mana.balanceOf(office.address)
-  console.log("contract owns %d mana.", contractBalance)
-  console.log("user owns %d mana.", userBalance)
-  console.log("office owns %d mana.", officeBalance)
+  for (i = 0; i < 9; i++) {
+    erc1155Balance = await erc1155.balanceOf(aggregator.address, 20000 + i)
+    erc1155UserBalance = await erc1155.balanceOf(user.address, 20000 + i)
+    console.log("erc1155 %d balance of aggregator: %d", i, erc1155Balance)
+    console.log("erc1155 %d balance of user: %d", i, erc1155UserBalance)
+  }
 
-  console.log("=========== user buy 1 NFT group ===========")
-  console.log("%s buy nft group: %s", user.address, "group1")
-  await mana.connect(user).approve(aggregator.address, 200000)
-  await aggregator.connect(user).buyNFTGroup(user.address, "group1")
+  contractManaBalance = await mana.balanceOf(aggregator.address)
+  userManaBalance = await mana.balanceOf(user.address)
+  officeManaBalance = await mana.balanceOf(office.address)
+  console.log("contract owns %d mana.", contractManaBalance)
+  console.log("user owns %d mana.", userManaBalance)
+  console.log("office owns %d mana.", officeManaBalance)
+
+  contractBanaBalance = await bana.balanceOf(aggregator.address)
+  userBanaBalance = await bana.balanceOf(user.address)
+  officeBanaBalance = await bana.balanceOf(office.address)
+  console.log("contract owns %d bana.", contractBanaBalance)
+  console.log("user owns %d bana.", userBanaBalance)
+  console.log("office owns %d bana.", officeBanaBalance)
+}
+
+async function release() {
+
+  const Aggregator = await hre.ethers.getContractFactory("Aggregator")
+  const aggregator = await Aggregator.attach("0x08e6D9b14944574d2f192620A90315986Bb10488")
+  console.log("aggregator address:", aggregator.address)
+
+  const ERC721Test = await hre.ethers.getContractFactory("ERC721Test")
+  const erc721 = await ERC721Test.attach("0x9B0A93EA49955a5ef1878c1a1e8f8645d049e597")
+  console.log("erc721 address:", erc721.address)
+
+  const ERC1155Test = await hre.ethers.getContractFactory("ERC1155Test")
+  const erc1155 = await ERC1155Test.attach("0x9eA07c5Ee61e82993B0544CEcEcaDeDD3C9F0fA1")
+  console.log("erc1155 address:", erc1155.address)
+
+  const MANA = await hre.ethers.getContractFactory("ERC20Test")
+  const mana = await MANA.attach("0xA1c57f48F0Deb89f569dFbE6E2B7f46D33606fD4")
+  console.log("MANA address:", mana.address)
+
+  nftNum = 10
+
+  // await aggregator.createNFT(0, "desc0", w3.utils.toWei('9', 'ether'), 1, 1000, nftNum, 0, erc721.address, mana.address)
+  // await aggregator.createNFT(1, "desc1", w3.utils.toWei('10', 'ether'), new BigNumber('105312291668557186697918027683670432318895095400549111254310977537'), new BigNumber('105312291668557186697918027683670432318895095400549111254310978536'), nftNum, 0, erc721.address, mana.address)
+  // await aggregator.createNFT(10, "desc0", w3.utils.toWei('2', 'ether'), 70, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 10 success")
+
+  // await aggregator.createNFT(11, "desc1", w3.utils.toWei('2', 'ether'), 71, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 11 success")
+
+  // await aggregator.createNFT(12, "desc2", w3.utils.toWei('2', 'ether'), 72, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 12 success")
+
+  // await aggregator.createNFT(13, "desc3", w3.utils.toWei('2', 'ether'), 73, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 13 success")
+
+  // await aggregator.createNFT(14, "desc4", w3.utils.toWei('2', 'ether'), 74, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 14 success")
+
+  // await aggregator.createNFT(15, "desc5", w3.utils.toWei('2', 'ether'), 75, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 15 success")
+
+  // await aggregator.createNFT(16, "desc6", w3.utils.toWei('2', 'ether'), 76, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 16 success")
+
+  // await aggregator.createNFT(17, "desc7", w3.utils.toWei('2', 'ether'), 77, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 17 success")
+
+  // await aggregator.createNFT(18, "desc8", w3.utils.toWei('3', 'ether'), 78, 20000, nftNum, 1, erc1155.address, mana.address)
+  // console.log("create 18 success")
+
+
+  await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", aggregator.address, [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
 }
 
 

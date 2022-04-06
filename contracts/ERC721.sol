@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-contract NFT is ERC721Enumerable {
+contract ERC721Test is ERC721Enumerable {
     
     address private creator;
 
