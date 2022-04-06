@@ -4,15 +4,24 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 var w3 = require('web3')
-var BigNumber = require('bignumber.js')
+var BN = w3.utils.BN;
+
 const hre = require("hardhat");
 const { expect } = require("chai");
 const { ethers } = require('hardhat');
 
 async function main() {
-  await debug()
+  await release()
 }
 
+async function erc20() {
+  const MANA = await hre.ethers.getContractFactory("ERC20Test")
+  const mana = await MANA.deploy('MANA', 'MN')
+  await mana.deployed()
+  console.log("MANA deployed to:", mana.address)
+
+  await mana.mint("0xf0A3FdF9dC875041DFCF90ae81D7E01Ed9Bc2033", w3.utils.toWei('100000000', 'ether'))
+}
 
 async function debug() {
   const [owner, user, office] = await ethers.getSigners()
@@ -202,8 +211,10 @@ async function debug() {
 async function release() {
 
   const Aggregator = await hre.ethers.getContractFactory("Aggregator")
-  const aggregator = await Aggregator.attach("0x08e6D9b14944574d2f192620A90315986Bb10488")
-  console.log("aggregator address:", aggregator.address)
+  // const aggregator = await Aggregator.deploy('0x17A6ba0B9Cc209ec061BA117769Ec7e9a30A0952', 0)
+  // await aggregator.deployed()
+  const aggregator = await Aggregator.attach('0xE1Cf0dDAAF53e79d0126a377981482D39D799f6E')
+  console.log("aggregator deployed to:", aggregator.address)
 
   const ERC721Test = await hre.ethers.getContractFactory("ERC721Test")
   const erc721 = await ERC721Test.attach("0x9B0A93EA49955a5ef1878c1a1e8f8645d049e597")
@@ -214,42 +225,22 @@ async function release() {
   console.log("erc1155 address:", erc1155.address)
 
   const MANA = await hre.ethers.getContractFactory("ERC20Test")
-  const mana = await MANA.attach("0xA1c57f48F0Deb89f569dFbE6E2B7f46D33606fD4")
+  const mana = await MANA.attach("0x308a6B4974264Ddc9e1a51C32A081a8ec507b675")
   console.log("MANA address:", mana.address)
 
   nftNum = 10
 
-  // await aggregator.createNFT(0, "desc0", w3.utils.toWei('9', 'ether'), 1, 1000, nftNum, 0, erc721.address, mana.address)
-  // await aggregator.createNFT(1, "desc1", w3.utils.toWei('10', 'ether'), new BigNumber('105312291668557186697918027683670432318895095400549111254310977537'), new BigNumber('105312291668557186697918027683670432318895095400549111254310978536'), nftNum, 0, erc721.address, mana.address)
-  // await aggregator.createNFT(10, "desc0", w3.utils.toWei('2', 'ether'), 70, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 10 success")
+  await aggregator.createNFTs([0,1,10,11,12,13,14,15,16,17,18], 
+    ["desc0","desc1","desc10","desc11","desc12","desc13","desc14","desc15","desc16","desc17","desc18"], 
+    [w3.utils.toWei('9', 'ether'), w3.utils.toWei('10', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether')],
+    [1, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310977537', 'wei'), 70, 71, 72, 73, 74, 75, 76, 77, 78], 
+    [1000, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310978536', 'wei'), 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000],
+    [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], 
+    [0,0,1,1,1,1,1,1,1,1,1],
+    [erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address],
+    [mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address])
 
-  // await aggregator.createNFT(11, "desc1", w3.utils.toWei('2', 'ether'), 71, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 11 success")
-
-  // await aggregator.createNFT(12, "desc2", w3.utils.toWei('2', 'ether'), 72, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 12 success")
-
-  // await aggregator.createNFT(13, "desc3", w3.utils.toWei('2', 'ether'), 73, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 13 success")
-
-  // await aggregator.createNFT(14, "desc4", w3.utils.toWei('2', 'ether'), 74, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 14 success")
-
-  // await aggregator.createNFT(15, "desc5", w3.utils.toWei('2', 'ether'), 75, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 15 success")
-
-  // await aggregator.createNFT(16, "desc6", w3.utils.toWei('2', 'ether'), 76, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 16 success")
-
-  // await aggregator.createNFT(17, "desc7", w3.utils.toWei('2', 'ether'), 77, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 17 success")
-
-  // await aggregator.createNFT(18, "desc8", w3.utils.toWei('3', 'ether'), 78, 20000, nftNum, 1, erc1155.address, mana.address)
-  // console.log("create 18 success")
-
-
-  await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", aggregator.address, [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
+  // await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", aggregator.address, [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
 }
 
 

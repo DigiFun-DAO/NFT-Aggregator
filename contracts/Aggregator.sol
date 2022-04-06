@@ -36,25 +36,28 @@ contract Aggregator is ERC1155Holder{
         transferFee = fee;
     }
 
-    function createNFT(
-        uint256 nid, 
-        string memory desc, 
-        uint256 price, 
-        uint256 lowerBound, 
-        uint256 upperBound, 
-        uint256 balance, 
-        uint nftType,
-        address nftAddr,
-        address erc20Addr) public onlyOwner{
-            require(NFTs[nid].nftAddr == address(0), "nft already exists");
-            require(nftType < 2, "nft type not support");
-            NFTs[nid] = NFT(desc, price, lowerBound, upperBound, balance, nftType, nftAddr, erc20Addr);
+    function createNFTs(
+        uint256[] memory nid, 
+        string[] memory desc, 
+        uint256[] memory price, 
+        uint256[] memory lowerBound, 
+        uint256[] memory upperBound, 
+        uint256[] memory balance, 
+        uint[] memory nftType,
+        address[] memory nftAddr,
+        address[] memory erc20Addr) public onlyOwner{
+        for (uint256 i = 0; i < nid.length; i++) {
+            require(nftType[i] < 2, "nft type not support");
+            NFTs[nid[i]] = NFT(desc[i], price[i], lowerBound[i], upperBound[i], balance[i], nftType[i], nftAddr[i], erc20Addr[i]);
+        }
     }
 
-    function increaseNFT(
-        uint256 nid,
-        uint256 increasement) public onlyOwner{
-            NFTs[nid].balance += increasement;
+    function increaseNFTs(
+        uint256[] memory nid,
+        uint256[] memory increasement) public onlyOwner{
+        for (uint256 i = 0; i < nid.length; i++) {
+            NFTs[nid[i]].balance += increasement[i];
+        }
     }
 
     function getNFT(uint256 nid) public view returns (string memory, uint256, uint256, uint256, uint256, uint, address, address) {
