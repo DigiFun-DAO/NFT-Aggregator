@@ -232,12 +232,12 @@ async function release() {
 
   await aggregator.createNFTs([0,1,10,11,12,13,14,15,16,17,18], 
     ["desc0","desc1","desc10","desc11","desc12","desc13","desc14","desc15","desc16","desc17","desc18"], 
-    [w3.utils.toWei('9', 'ether'), w3.utils.toWei('10', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether')],
+    [w3.utils.toWei('9', 'ether'), w3.utils.toWei('10', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('3', 'ether')],
     [1, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310977537', 'wei'), 70, 71, 72, 73, 74, 75, 76, 77, 78], 
     [1000, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310978536', 'wei'), 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000],
     [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], 
     [0,0,1,1,1,1,1,1,1,1,1],
-    [erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address,erc721.address],
+    [erc721.address,erc721.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address],
     [mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address])
 
   // await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", aggregator.address, [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
