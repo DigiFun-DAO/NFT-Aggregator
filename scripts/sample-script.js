@@ -12,6 +12,7 @@ const { ethers } = require('hardhat');
 
 async function main() {
   await release()
+    // await transferERC1155()
 }
 
 async function erc20() {
@@ -231,11 +232,11 @@ async function release() {
   nftNum = 10
 
   await aggregator.createNFTs([0,1,10,11,12,13,14,15,16,17,18], 
-    ["desc0","desc1","desc10","desc11","desc12","desc13","desc14","desc15","desc16","desc17","desc18"], 
+    ["DigiFun Ice Shadow-helmet","DigiFun Ice Shadow-upper body","DigiFun Ice Shadow-9-left base","DigiFun Ice Shadow-8-right base","DigiFun Ice Shadow-7-leg","DigiFun Ice Shadow-6-lower left wing","DigiFun Ice Shadow-5-upper left wing","DigiFun Ice Shadow-4-lower right wing","DigiFun Ice Shadow-3-upper right wing","DigiFun Ice Shadow-2-chest","DigiFun Ice Shadow-1-head"], 
     [w3.utils.toWei('9', 'ether'), w3.utils.toWei('10', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('2', 'ether'), w3.utils.toWei('3', 'ether')],
     [1, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310977537', 'wei'), 70, 71, 72, 73, 74, 75, 76, 77, 78], 
     [1000, w3.utils.toWei('105312291668557186697918027683670432318895095400549111254310978536', 'wei'), 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000],
-    [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], 
+    [3,5,2,4,4,4,4,4,4,4,2], 
     [0,0,1,1,1,1,1,1,1,1,1],
     [erc721.address,erc721.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address,erc1155.address],
     [mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address,mana.address])
@@ -243,6 +244,14 @@ async function release() {
   // await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", aggregator.address, [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
 }
 
+async function transferERC1155() {
+  const ERC1155Test = await hre.ethers.getContractFactory("ERC1155Test")
+  const erc1155 = await ERC1155Test.attach("0x9eA07c5Ee61e82993B0544CEcEcaDeDD3C9F0fA1")
+  console.log("erc1155 address:", erc1155.address)
+
+  nftNum = 10
+  await erc1155.safeBatchTransferFrom("0x63a725fEee4C8D89f7064f36785a980bc2AC4ce5", "0xbED2387034955B9B94528FCd1F65af0288ebbB74", [70,71,72,73,74,75,76,77,78], [nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum,nftNum], w3.utils.asciiToHex("test"))
+}
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
