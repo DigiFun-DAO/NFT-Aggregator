@@ -13,17 +13,25 @@ contract Aggregator is ERC1155Holder{
     uint256 transferFee;            // need to divide 10000
 
     struct NFT{
-        string desc;
-        uint256 price;
-        uint256 lowerBound;
-        uint256 upperBound;
-        uint256 balance;
-        uint nftType; // 0 for ERC721, 1 for ERC1155
-        address nftAddr;
-        address erc20Addr;
+        string desc;            // description
+        uint256 price;          // NFT price
+        uint256 lowerBound;     // ERC721: the lower bound of the nft id interval; ERC1155: nft id
+        uint256 upperBound;     // the upper bound of the nft id interval (only for ERC721)
+        uint256 balance;        // NFT balance
+        uint nftType;           // 0 for ERC721, 1 for ERC1155
+        address nftAddr;        // NFT contract address
+        address erc20Addr;      // ERC20 address
     }
-    mapping(uint256 => NFT) private NFTs; // NFT name -> NFT
+
+    mapping(uint256 => NFT) private NFTs; // NFT id -> NFT
     
+    struct group{
+        uint nftType;       // 0 for ERC721, 1 for ERC1155
+        uint256[] NFTList;  // NFT id list
+    }
+
+    mapping(string => mapping(string => group)) private NFTGroups; // groupName -> (metaverse platform => NFT id array)
+
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
@@ -36,6 +44,7 @@ contract Aggregator is ERC1155Holder{
         transferFee = fee;
     }
 
+    // createNFTs creates NFTs in batches
     function createNFTs(
         uint256[] memory nid, 
         string[] memory desc, 
@@ -52,6 +61,7 @@ contract Aggregator is ERC1155Holder{
         }
     }
 
+    // createNFTs increases NFTs in batches
     function increaseNFTs(
         uint256[] memory nid,
         uint256[] memory increasement) public onlyOwner{
@@ -60,11 +70,112 @@ contract Aggregator is ERC1155Holder{
         }
     }
 
+    // getNFTs returns NFT
     function getNFT(uint256 nid) public view returns (string memory, uint256, uint256, uint256, uint256, uint, address, address) {
         NFT memory nft = NFTs[nid];
         return (nft.desc, nft.price, nft.lowerBound, nft.upperBound, nft.balance, nft.nftType, nft.nftAddr, nft.erc20Addr);
     }
 
+    // createNFTGroup creates NFT group
+    function createNFTGroup(string memory groupName, string memory platform, uint nftType, uint256[] memory nids) public onlyOwner {
+        for (uint256 i = 0; i < nids.length; i++) {
+            require(NFTs[nids[i]].nftAddr != address(0), "nft not found");
+            require(NFTs[nids[i]].nftType == nftType, "nft type not match, 0 for ERC721, 1 for ERC1155");
+        }
+        NFTGroups[groupName][platform] = group(nftType, nids);
+    }
+
+    // getNFTGroup returns NFT group
+    function getNFTGroup(string memory groupName, string memory platform) public view returns (uint256, uint256[] memory) {
+        group memory g = NFTGroups[groupName][platform];
+        return (g.nftType, g.NFTList);
+    }
+
+    // transferNFTGroup transfer a NFT group from a platform to another
+    function transferNFTGroup(address to, string memory groupName, string memory fromPlatform, string memory toPlatform) public {
+        // _checkNFTEnough(msg.sender, groupName, fromPlatform);
+        // _checkNFTEnough(address(this), groupName, toPlatform);
+        _transferNFTGroup(msg.sender, address(this), groupName, fromPlatform);
+        _transferNFTGroup(address(this), to, groupName, toPlatform);
+    }
+
+    // function _checkNFTEnough(address from, string memory groupName, string memory platform) internal view {
+    //     if(from == address(this)) {
+    //         for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
+    //             require(NFTs[NFTGroups[groupName][platform].NFTList[i]].balance > 0, "nft not enough!");
+    //             // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance--;
+    //         }
+    //     } else {
+    //         if (NFTGroups[groupName][platform].nftType == 0) {
+    //             for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
+    //                 // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
+    //                 NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
+    //                 IERC721Enumerable nftContract = IERC721Enumerable(nft.nftAddr);
+    //                 uint256 total = nftContract.balanceOf(from);
+    //                 bool foundNFT;
+    //                 for(uint j = 0; j < total; j++) {
+    //                     uint256 tokenId = nftContract.tokenOfOwnerByIndex(from, j);
+    //                     if (tokenId <= nft.upperBound && tokenId >= nft.lowerBound) {
+    //                         foundNFT = true;
+    //                         break;
+    //                     }
+    //                 }
+    //                 require(foundNFT, "nft not enough");
+    //             }
+    //         } else {
+    //             for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
+    //                 // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
+    //                 NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
+    //                 IERC1155 nftContract = IERC1155(nft.nftAddr);
+    //                 uint256 total = nftContract.balanceOf(from, nft.lowerBound);
+    //                 require(total > 0, "nft not enough");
+    //             }
+    //         }
+    //     }
+    // }
+
+    function _transferNFTGroup(address from, address to, string memory groupName, string memory platform) internal {
+        if (NFTGroups[groupName][platform].nftType == 0) {
+            for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
+                NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
+                IERC721Enumerable nftContract = IERC721Enumerable(nft.nftAddr);
+                uint256 total = nftContract.balanceOf(from);
+                for(uint256 j = 0; j < total; ) {
+                    uint256 tokenId = nftContract.tokenOfOwnerByIndex(from, j);
+                    if (tokenId <= nft.upperBound && tokenId >= nft.lowerBound) {
+                        nftContract.transferFrom(from, to, tokenId);
+                        if (from == address(this)) {
+                            NFTs[NFTGroups[groupName][platform].NFTList[i]].balance--;
+                        } else {
+                            NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
+                        }
+                        break;
+                    } else {
+                        j++;
+                    }
+                }
+            }
+        } else {
+            uint256[] memory ids = new uint256[](NFTGroups[groupName][platform].NFTList.length);
+            uint256[] memory amounts = new uint256[](NFTGroups[groupName][platform].NFTList.length);
+            IERC1155 nftContract;
+            for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
+                NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
+                ids[i] = nft.lowerBound;
+                if (from == address(this)) {
+                    NFTs[NFTGroups[groupName][platform].NFTList[i]].balance--;
+                } else {
+                    NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
+                }
+                amounts[i] = 1;
+                nftContract = IERC1155(nft.nftAddr);
+            }
+            bytes memory bs;
+            nftContract.safeBatchTransferFrom(from, to, ids, amounts, bs);
+        }
+    }
+
+    // buyNFTs buy NFTs in batches
     function buyNFTs(address to, uint256[] memory nids, uint256[] memory amounts) public {
         require(nids.length > 0, "nft number == 0");
         uint256[] memory nfts = new uint256[](nids.length);
@@ -91,12 +202,14 @@ contract Aggregator is ERC1155Holder{
         return;
     }
 
-    function transferERC20(address _to, uint256 amt, address erc20Addr) public onlyOwner {
+    // transferERC20 transfer ERC20 from contract to contract creator 
+    function transferERC20(address to, uint256 amt, address erc20Addr) public onlyOwner {
         require(amt > 0);
         IERC20 erc20 = IERC20(erc20Addr);
-        erc20.transfer(_to, amt);
+        erc20.transfer(to, amt);
     }
 
+    // transferNFTs transfer NFT from contract to contract creator 
     function transferNFTs(address to, uint256[] memory nids) public onlyOwner {
         require(nids.length > 0, "len(nids) == 0");
         for (uint256 i = 0; i < nids.length; i++) {
@@ -115,15 +228,15 @@ contract Aggregator is ERC1155Holder{
         }
     }
 
-    function _transferERC20(address _to, address _feeTo, uint256 price, address erc20Addr) internal {
+    function _transferERC20(address to, address feeTo, uint256 price, address erc20Addr) internal {
         uint256 fee = price * transferFee / 10000;
         require(price - fee > 0);
         IERC20 erc20 = IERC20(erc20Addr);
         if (price - fee > 0) {
-            erc20.transferFrom(msg.sender, _to, price - fee);
+            erc20.transferFrom(msg.sender, to, price - fee);
         }
         if (fee > 0) {
-            erc20.transferFrom(msg.sender, _feeTo, fee);
+            erc20.transferFrom(msg.sender, feeTo, fee);
         }
     }
  
