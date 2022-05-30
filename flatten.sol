@@ -633,10 +633,30 @@ contract Aggregator is ERC1155Holder{
 
     // createNFTs increases NFTs in batches
     function increaseNFTs(
-        uint256[] memory nid,
+        uint256[] memory nids,
         uint256[] memory increasement) public onlyOwner{
-        for (uint256 i = 0; i < nid.length; i++) {
-            NFTs[nid[i]].balance += increasement[i];
+        for (uint256 i = 0; i < nids.length; i++) {
+            NFTs[nids[i]].balance += increasement[i];
+        }
+    }
+
+    // refreshNFTAmt refreshes NFTs amounts
+    function refreshNFTAmt(uint256[] memory nids) public onlyOwner{
+        for (uint256 i = 0; i < nids.length; i++) {
+            if (NFTs[nids[i]].nftType == 0) {
+                NFTs[nids[i]].balance = 0;
+                IERC721Enumerable erc721 = IERC721Enumerable(NFTs[nids[i]].nftAddr);
+                uint256 total = erc721.balanceOf(address(this));
+                for(uint256 j = 0; j < total; j++) {
+                    uint256 tokenId = erc721.tokenOfOwnerByIndex(address(this), j);
+                    if (tokenId >= NFTs[nids[i]].lowerBound && tokenId <= NFTs[nids[i]].upperBound) {
+                        NFTs[nids[i]].balance++;
+                    }
+                }
+            } else {
+                IERC1155 erc1155 = IERC1155(NFTs[nids[i]].nftAddr);
+                NFTs[nids[i]].balance = erc1155.balanceOf(address(this), NFTs[nids[i]].lowerBound);
+            }
         }
     }
 
@@ -668,41 +688,6 @@ contract Aggregator is ERC1155Holder{
         _transferNFTGroup(msg.sender, address(this), groupName, fromPlatform);
         _transferNFTGroup(address(this), to, groupName, toPlatform);
     }
-
-    // function _checkNFTEnough(address from, string memory groupName, string memory platform) internal view {
-    //     if(from == address(this)) {
-    //         for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
-    //             require(NFTs[NFTGroups[groupName][platform].NFTList[i]].balance > 0, "nft not enough!");
-    //             // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance--;
-    //         }
-    //     } else {
-    //         if (NFTGroups[groupName][platform].nftType == 0) {
-    //             for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
-    //                 // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
-    //                 NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
-    //                 IERC721Enumerable nftContract = IERC721Enumerable(nft.nftAddr);
-    //                 uint256 total = nftContract.balanceOf(from);
-    //                 bool foundNFT;
-    //                 for(uint j = 0; j < total; j++) {
-    //                     uint256 tokenId = nftContract.tokenOfOwnerByIndex(from, j);
-    //                     if (tokenId <= nft.upperBound && tokenId >= nft.lowerBound) {
-    //                         foundNFT = true;
-    //                         break;
-    //                     }
-    //                 }
-    //                 require(foundNFT, "nft not enough");
-    //             }
-    //         } else {
-    //             for (uint256 i = 0; i < NFTGroups[groupName][platform].NFTList.length; i++) {
-    //                 // NFTs[NFTGroups[groupName][platform].NFTList[i]].balance++;
-    //                 NFT memory nft = NFTs[NFTGroups[groupName][platform].NFTList[i]];
-    //                 IERC1155 nftContract = IERC1155(nft.nftAddr);
-    //                 uint256 total = nftContract.balanceOf(from, nft.lowerBound);
-    //                 require(total > 0, "nft not enough");
-    //             }
-    //         }
-    //     }
-    // }
 
     function _transferNFTGroup(address from, address to, string memory groupName, string memory platform) internal {
         if (NFTGroups[groupName][platform].nftType == 0) {
@@ -866,6 +851,10 @@ contract Aggregator is ERC1155Holder{
             uint256 tokenId = erc721.tokenOfOwnerByIndex(address(this), 0);
             erc721.transferFrom(address(this), to, tokenId);
             total--;
+        }
+
+        for (uint256 i = 0; i < nids.length; i++) {
+            NFTs[nids[i]].balance = 0;
         }
     }
 
